@@ -39,10 +39,9 @@ namespace SFramework.UI.Runtime
         private readonly ISFConfigsService _configsService;
 
 
-        SFUIService(ISFContainer container, ISFConfigsService configsService)
+        SFUIService(ISFConfigsService configsService)
         {
             _parentTransform = new GameObject("SFUI").GetComponent<Transform>();
-            _parentTransform.SetParent(container.Root, true);
             _configsService = configsService;
         }
 
