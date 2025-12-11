@@ -22,7 +22,9 @@ namespace SFramework.UI.Runtime
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
 
-        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) => { };
+        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) =>
+        {
+        };
 
         public SFScreenModel[] ScreenModels => _screenModels.Values.ToArray();
         public SFWidgetModel[] WidgetModels => _widgetModelById.Values.ToArray();
@@ -45,14 +47,20 @@ namespace SFramework.UI.Runtime
             _configsService = configsService;
         }
 
-        public UniTask Init(CancellationToken cancellationToken)
+        public async UniTask Init(CancellationToken cancellationToken)
         {
+            var preloadTasks = new List<UniTask>();
+
             if (_configsService.TryGetConfigs(out SFUIConfig[] configs))
             {
                 foreach (var repository in configs)
                 {
+                    if (repository.Groups == null) continue;
+
                     foreach (var groupNode in repository.Groups)
                     {
+                        if (groupNode.Screens == null) continue;
+
                         foreach (var screenNode in groupNode.Screens)
                         {
                             _screenNodes.TryAdd(screenNode.FullId, screenNode);
@@ -62,21 +70,29 @@ namespace SFramework.UI.Runtime
                                 _widgetNodes.TryAdd(widgetNode.FullId, widgetNode);
                                 _widgetModelById.TryAdd(widgetNode.FullId, new SFWidgetModel(widgetNode));
                             }
+
+                            if (screenNode.Preload)
+                            {
+                                preloadTasks.Add(LoadScreen(screenNode.FullId, cancellationToken: cancellationToken));
+                            }
                         }
                     }
                 }
             }
 
-
-            return UniTask.CompletedTask;
+            await UniTask.WhenAll(preloadTasks).AttachExternalCancellation(cancellationToken);
         }
 
 
-        public async UniTask LoadScreen(string screen, bool show = false, bool force = false, IProgress<float> progress = null,
+        public async UniTask LoadScreen(string screen, bool show = false, bool force = false,
+            IProgress<float> progress = null,
             CancellationToken cancellationToken = default, params object[] parameters)
         {
             if (string.IsNullOrEmpty(screen))
-                throw new ArgumentNullException(nameof(screen));
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to load screen. Id is empty!");
+                return;
+            }
 
             if (_operationHandleByScreen.TryGetValue(screen, out _)) return;
 
@@ -151,7 +167,12 @@ namespace SFramework.UI.Runtime
             CancellationToken cancellationToken = default,
             params object[] parameters)
         {
-            if (string.IsNullOrWhiteSpace(screen)) return;
+            if (string.IsNullOrEmpty(screen))
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to show screen. Id is empty!");
+                return;
+            }
+
             if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
             if (screenModel.State == SFScreenState.Show || screenModel.State == SFScreenState.Shown) return;
             screenModel.State = SFScreenState.Show;
@@ -171,7 +192,7 @@ namespace SFramework.UI.Runtime
                 SFDebug.Log("Parameters NULL");
                 return;
             }
-            
+
             if (_screenViews.TryGetValue(screen, out var view))
             {
                 view.SetParameters(parameters);
@@ -184,7 +205,12 @@ namespace SFramework.UI.Runtime
 
         public void CloseScreen(string screen, bool force, bool unload)
         {
-            if (string.IsNullOrWhiteSpace(screen)) return;
+            if (string.IsNullOrEmpty(screen))
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to close screen. Id is empty!");
+                return;
+            }
+
             if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
             if (screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
             screenModel.State = SFScreenState.Close;
@@ -215,6 +241,12 @@ namespace SFramework.UI.Runtime
 
         public void RegisterScreen(string screen, SFScreenView root)
         {
+            if (string.IsNullOrEmpty(screen))
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to register screen. Id is empty!");
+                return;
+            }
+
             _screenModels[screen].State = SFScreenState.Closed;
             _screenViews[screen] = root;
             if (TryGetScreenModel(screen, out var model))
@@ -225,6 +257,12 @@ namespace SFramework.UI.Runtime
 
         public void RegisterWidget(string widget, SFWidgetView widgetView)
         {
+            if (string.IsNullOrEmpty(widget))
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to register widget. Id is empty!");
+                return;
+            }
+
             if (_widgetViews.TryGetValue(widget, out var widgetViews))
             {
                 widgetViews.Add(widgetView);
@@ -246,6 +284,12 @@ namespace SFramework.UI.Runtime
 
         public void UnregisterWidget(string widget, SFWidgetView widgetView)
         {
+            if (string.IsNullOrEmpty(widget))
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to unregister widget. Id is empty!");
+                return;
+            }
+
             if (_widgetViews.ContainsKey(widget))
             {
                 _widgetViews.Remove(widget);
@@ -299,6 +343,12 @@ namespace SFramework.UI.Runtime
 
         public void UnregisterScreen(string screen)
         {
+            if (string.IsNullOrEmpty(screen))
+            {
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to unregister screen. Id is empty!");
+                return;
+            }
+
             _screenModels[screen].State = SFScreenState.Closed;
 
             if (_screenViews.ContainsKey(screen))

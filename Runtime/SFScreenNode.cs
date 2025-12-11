@@ -11,6 +11,8 @@ namespace SFramework.UI.Runtime
     {
         [SFAsset(typeof(SFScreenView))]
         public string Prefab;
+		public bool Preload;
+        public SFUICloseBehaviour CloseBehaviour;
         public SFWidgetNode[] Widgets;
         public override ISFConfigNode[] Children => Widgets;
     }
