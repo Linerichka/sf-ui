@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.EventSystems;
 using UnityEngine.ResourceManagement.AsyncOperations;
+using Object = UnityEngine.Object;
 
 namespace SFramework.UI.Runtime
 {
@@ -43,7 +44,8 @@ namespace SFramework.UI.Runtime
 
         SFUIService(ISFConfigsService configsService)
         {
-            _parentTransform = new GameObject("SFUI").GetComponent<Transform>();
+            _parentTransform = new GameObject("SFUI").transform;
+            Object.DontDestroyOnLoad(_parentTransform);
             _configsService = configsService;
         }
 
