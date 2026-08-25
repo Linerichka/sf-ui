@@ -6,7 +6,7 @@ namespace SFramework.UI.Runtime
 {
     public sealed class SFWidgetAttribute : SFIdAttribute
     {
-        public SFWidgetAttribute() : base( typeof(SFUIConfig), 3)
+        public SFWidgetAttribute() : base( typeof(SFUIConfig), 2)
         {
         }
     }

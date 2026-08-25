@@ -2,9 +2,9 @@
 {
     public enum SFScreenState : byte
     {
-        Show = 1 << 0,
-        Shown = 1 << 1,
-        Close = 1 << 2,
-        Closed = 1 << 3
+        Show = 1,
+        Shown = 2,
+        Close = 3,
+        Closed = 4
     }
 }

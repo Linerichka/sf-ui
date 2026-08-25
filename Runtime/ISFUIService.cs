@@ -23,28 +23,31 @@ namespace SFramework.UI.Runtime
         UniTask LoadScreen(string screen, bool show, bool force, IProgress<float> progress = null,
             CancellationToken cancellationToken = default, params object[] parameters);
 
-        void UnloadScreen(string screen);
+        UniTask ShowScreen(string screen);
         UniTask ShowScreen(string screen, bool force, params object[] parameters);
-
         UniTask ShowScreen(string screen, bool force, IProgress<float> progress = null, CancellationToken cancellationToken = default,
             params object[] parameters);
-
-        void SetParameters(string screen, params object[] parameters);
-
+        
+        void UnloadScreen(string screen);
+        void CloseScreen(string screen);
         void CloseScreen(string screen, bool force, bool unload);
+
+
+        string GetScreenId(Type type);
         bool TryGetScreenView(string screen, out SFScreenView screenView);
-        
         bool TryGetScreenView<T>(string screen, out T screenView) where T : SFScreenView;
-        
         bool TryGetScreenModel(string screen, out SFScreenModel screenModel);
-        void RegisterScreen(string screen, SFScreenView root);
-        void RegisterWidget(string widget, SFWidgetView widgetView);
-        void UnregisterWidget(string widget, SFWidgetView widgetView);
+        
         bool TryGetWidgetView(string widget, int index, out SFWidgetView view);
         bool TryGetWidgetView<T>(string widget, int index, out T view) where T : SFWidgetView;
         bool TryGetWidgetNode(string widget, out SFWidgetNode widgetNode);
         bool TryGetWidgetModel(string widget, out SFWidgetModel widgetModel);
+        
+        void RegisterScreen(string screen, SFScreenView root);
+        void RegisterWidget(string widget, SFWidgetView widgetView);
+        void UnregisterWidget(string widget, SFWidgetView widgetView);
         void UnregisterScreen(string screen);
+        
         void ScreenShownCallback(string screen);
         void ScreenClosedCallback(string screen, bool unload);
         void WidgetEventCallback(string widget, SFBaseEventType eventType, BaseEventData eventData);

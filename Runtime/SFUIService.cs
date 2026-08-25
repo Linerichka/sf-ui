@@ -23,9 +23,7 @@ namespace SFramework.UI.Runtime
         public event Action<string> OnScreenClosed = _ => { };
         public event Action<string, SFBaseEventType, BaseEventData> OnWidgetBaseEvent = (_, _, _) => { };
 
-        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) =>
-        {
-        };
+        public event Action<string, int, SFPointerEventType, PointerEventData> OnWidgetPointerEvent = (_, _, _, _) => { };
 
         public SFScreenModel[] ScreenModels => _screenModels.Values.ToArray();
         public SFWidgetModel[] WidgetModels => _widgetModelById.Values.ToArray();
@@ -37,6 +35,8 @@ namespace SFramework.UI.Runtime
         private readonly Dictionary<string, SFScreenNode> _screenNodes = new();
         private readonly Dictionary<string, SFWidgetNode> _widgetNodes = new();
         private readonly Dictionary<string, List<SFWidgetView>> _widgetViews = new();
+        
+        private readonly Dictionary<Type, string> _screenTypeToId = new();
 
         readonly Transform _parentTransform;
         private readonly ISFConfigsService _configsService;
@@ -57,26 +57,28 @@ namespace SFramework.UI.Runtime
             {
                 foreach (var repository in configs)
                 {
-                    if (repository.Groups == null) continue;
+                    if (repository.Screens == null) continue;
 
-                    foreach (var groupNode in repository.Groups)
+                    foreach (var screenNode in repository.Screens)
                     {
-                        if (groupNode.Screens == null) continue;
-
-                        foreach (var screenNode in groupNode.Screens)
+                        if (screenNode.GetScreenType() == null)
                         {
-                            _screenNodes.TryAdd(screenNode.FullId, screenNode);
-                            _screenModels.TryAdd(screenNode.FullId, new SFScreenModel(screenNode));
-                            foreach (var widgetNode in screenNode.Widgets)
-                            {
-                                _widgetNodes.TryAdd(widgetNode.FullId, widgetNode);
-                                _widgetModelById.TryAdd(widgetNode.FullId, new SFWidgetModel(widgetNode));
-                            }
+                            SFDebug.Log(LogType.Error, "[SFUI] - Unable to load screen. Type is empty!");
+                            continue;
+                        }
 
-                            if (screenNode.Preload)
-                            {
-                                preloadTasks.Add(LoadScreen(screenNode.FullId, cancellationToken: cancellationToken));
-                            }
+                        _screenTypeToId[screenNode.GetScreenType()] = screenNode.FullId;
+                        _screenNodes.TryAdd(screenNode.FullId, screenNode);
+                        _screenModels.TryAdd(screenNode.FullId, new SFScreenModel(screenNode));
+                        foreach (var widgetNode in screenNode.Widgets)
+                        {
+                            _widgetNodes.TryAdd(widgetNode.FullId, widgetNode);
+                            _widgetModelById.TryAdd(widgetNode.FullId, new SFWidgetModel(widgetNode));
+                        }
+
+                        if (screenNode.Preload)
+                        {
+                            preloadTasks.Add(LoadScreen(screenNode.FullId, cancellationToken: cancellationToken));
                         }
                     }
                 }
@@ -155,6 +157,11 @@ namespace SFramework.UI.Runtime
             OnScreenUnloaded.Invoke(screen);
         }
 
+        public UniTask ShowScreen(string screen)
+        {
+            return ShowScreen(screen, false);
+        }
+        
         public UniTask ShowScreen(string screen, params object[] parameters)
         {
             return ShowScreen(screen, false, null, CancellationToken.None, parameters);
@@ -186,22 +193,33 @@ namespace SFramework.UI.Runtime
 
             OnShowScreen.Invoke(screen, force, parameters);
         }
-
-        public void SetParameters(string screen, params object[] parameters)
+        
+        public void CloseScreen(string screen)
         {
-            if (parameters == null)
+            if (string.IsNullOrEmpty(screen))
             {
-                SFDebug.Log("Parameters NULL");
+                SFDebug.Log(LogType.Warning, "[SFUI] - Unable to close screen. Id is empty!");
                 return;
             }
-
-            if (_screenViews.TryGetValue(screen, out var view))
+            
+            if (!_screenModels.TryGetValue(screen, out var screenModel)) return;
+            
+            screenModel = _screenModels[screen];
+            
+            if (screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
+            
+            switch (screenModel.Node.CloseBehaviour)
             {
-                view.SetParameters(parameters);
-            }
-            else
-            {
-                SFDebug.Log("Cant find view");
+                case SFUICloseBehaviour.DisableCanvas:
+                case SFUICloseBehaviour.DisableObject:
+                    screenModel.State = SFScreenState.Close;
+                    OnCloseScreen.Invoke(screen, false, false);
+                    break;
+                case SFUICloseBehaviour.Unload:
+                    screenModel.State = SFScreenState.Close;
+                    OnCloseScreen.Invoke(screen, true, true);
+                    UnloadScreen(screen);
+                    break;
             }
         }
 
@@ -217,6 +235,12 @@ namespace SFramework.UI.Runtime
             if (screenModel.State == SFScreenState.Close || screenModel.State == SFScreenState.Closed) return;
             screenModel.State = SFScreenState.Close;
             OnCloseScreen.Invoke(screen, force, unload);
+        }
+
+        public string GetScreenId(Type type)
+        {
+            _screenTypeToId.TryGetValue(type, out var screenId);
+            return screenId;
         }
 
         public bool TryGetScreenView(string screen, out SFScreenView screenView)
