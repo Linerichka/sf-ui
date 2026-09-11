@@ -1,16 +1,15 @@
-﻿using System;
-using SFramework.Configs.Runtime;
+﻿using SFramework.Configs.Runtime;
+using UnityEngine;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
 
 namespace SFramework.UI.Runtime
 {
-    public sealed class SFUIConfig : SFNodesConfig
+    [CreateAssetMenu(menuName = "SFramework/UI/Config", fileName = "ui_cfg")]
+    public sealed class SFUIConfig : SFConfig
     {
-        public SFScreenNode[] Screens;
-
-        public override ISFConfigNode[] Children => Screens;
+        public SFScreenData[] Screens;
 
 
 #if UNITY_EDITOR

@@ -2,8 +2,8 @@
 {
     public enum SFUICloseBehaviour
     {
-        DisableCanvas,
-        DisableObject,
-        Unload
+        Disable,
+        DestroyObject,
+        DestroyAndUnload
     }
 }

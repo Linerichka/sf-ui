@@ -1,0 +1,22 @@
+{
+    "name": "SFramework.UI.Editor",
+    "rootNamespace": "SFramework.UI.Editor",
+    "references": [
+        "SFramework.Core.Runtime",
+        "SFramework.Core.Editor",
+        "SFramework.UI.Runtime",
+        "SFramework.Configs.Editor",
+        "SFramework.Configs.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

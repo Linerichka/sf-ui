@@ -10,27 +10,26 @@ using UnityEngine.Serialization;
 namespace SFramework.UI.Runtime
 {
     [Serializable]
-    public sealed class SFScreenNode : SFConfigNode
+    public sealed class SFScreenData
     {
         [SFAsset(typeof(SFScreenView))]
         public string Prefab;
-        [HideInInspector] [SerializeField] [ReadOnly]
-        private string ScreenType;
         
 		public bool Preload;
+        public bool ShowByDefault;
         public SFUICloseBehaviour CloseBehaviour;
-        public SFWidgetNode[] Widgets;
         
-        public override ISFConfigNode[] Children => Widgets;
+        [HideInInspector] [SerializeField]
+        private string _screenTypeName;
         
-        public Type GetScreenType() => Type.GetType(ScreenType);
+        public Type GetScreenType() => Type.GetType(_screenTypeName);
         
 #if UNITY_EDITOR
         internal void OnValidate()
         {
             if (string.IsNullOrEmpty(Prefab))
             {
-                ScreenType = null;
+                _screenTypeName = null;
                 return;
             }
 
@@ -45,12 +44,12 @@ namespace SFramework.UI.Runtime
 
             if (view == null)
             {
-                ScreenType = null;
+                _screenTypeName = null;
                 handle.Release();
                 return;
             }
 
-            ScreenType = view.GetType().AssemblyQualifiedName;
+            _screenTypeName = view.GetType().AssemblyQualifiedName;
 
             handle.Release();
         }
